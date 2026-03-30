@@ -63,6 +63,26 @@ CREATE TABLE `attendance` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `event_schedules`
+--
+
+CREATE TABLE `event_schedules` (
+  `id` int(11) NOT NULL,
+  `event_name` varchar(255) NOT NULL,
+  `event_date` date NOT NULL,
+  `time_in_start` time NOT NULL,
+  `time_in_end` time NOT NULL,
+  `time_out_start` time NOT NULL,
+  `time_out_end` time NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_by` int(11) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `students`
 --
 
@@ -97,6 +117,12 @@ ALTER TABLE `attendance`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `event_schedules`
+--
+ALTER TABLE `event_schedules`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indexes for table `students`
 --
 ALTER TABLE `students`
@@ -118,6 +144,12 @@ ALTER TABLE `admins`
 -- AUTO_INCREMENT for table `attendance`
 --
 ALTER TABLE `attendance`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `event_schedules`
+--
+ALTER TABLE `event_schedules`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --

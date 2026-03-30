@@ -53,6 +53,9 @@ $stats = getAttendanceStats();
                 <a href="<?php echo BASE_URL; ?>admin/qr-generator.php" class="nav-link-custom">
                     <i class="fas fa-qrcode me-2"></i>QR Generator
                 </a>
+                <a href="<?php echo BASE_URL; ?>admin/event-scheduler.php" class="nav-link-custom">
+                    <i class="fas fa-calendar-alt me-2"></i>Event Scheduler
+                </a>
                 <a href="<?php echo BASE_URL; ?>admin/settings.php" class="nav-link-custom">
                     <i class="fas fa-cog me-2"></i>Settings
                 </a>
@@ -147,13 +150,23 @@ $stats = getAttendanceStats();
                 <table class="table table-hover" id="attendanceTable">
                     <thead>
                         <tr>
-                            <th>Date</th>
-                            <th>Student ID</th>
-                            <th>Name</th>
-                            <th>Course</th>
-                            <th>Year</th>
-                            <th>Time In</th>
-                            <th>Time Out</th>
+                            <th rowspan="2" style="vertical-align: middle;">Date</th>
+                            <th rowspan="2" style="vertical-align: middle;">Student ID</th>
+                            <th rowspan="2" style="vertical-align: middle;">Name</th>
+                            <th rowspan="2" style="vertical-align: middle;">Course</th>
+                            <th rowspan="2" style="vertical-align: middle;">Year</th>
+                            <th colspan="2" class="text-center" style="background: rgba(243, 156, 18, 0.1); border-bottom: 2px solid #f39c12;">
+                                <i class="fas fa-sun me-1" style="color: #f39c12;"></i>Morning (AM)
+                            </th>
+                            <th colspan="2" class="text-center" style="background: rgba(230, 126, 34, 0.1); border-bottom: 2px solid #e67e22;">
+                                <i class="fas fa-cloud-sun me-1" style="color: #e67e22;"></i>Afternoon (PM)
+                            </th>
+                        </tr>
+                        <tr>
+                            <th class="text-center" style="background: rgba(243, 156, 18, 0.05);">Time In</th>
+                            <th class="text-center" style="background: rgba(243, 156, 18, 0.05);">Time Out</th>
+                            <th class="text-center" style="background: rgba(230, 126, 34, 0.05);">Time In</th>
+                            <th class="text-center" style="background: rgba(230, 126, 34, 0.05);">Time Out</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -167,16 +180,34 @@ $stats = getAttendanceStats();
                                 <td><?php echo htmlspecialchars(($record['first_name'] ?? 'Unknown') . ' ' . ($record['last_name'] ?? '')); ?></td>
                                 <td><?php echo htmlspecialchars($record['course'] ?? 'N/A'); ?></td>
                                 <td><?php echo htmlspecialchars($record['year_level'] ?? 'N/A'); ?></td>
-                                <td>
-                                    <?php if (!empty($record['time_in'])): ?>
-                                        <span class="badge bg-success"><i class="fas fa-sign-in-alt me-1"></i><?php echo date('h:i:s A', strtotime($record['time_in'])); ?></span>
+                                <!-- AM Time In -->
+                                <td class="text-center">
+                                    <?php if (!empty($record['am_time_in'])): ?>
+                                        <span class="badge bg-success"><i class="fas fa-sign-in-alt me-1"></i><?php echo date('h:i:s A', strtotime($record['am_time_in'])); ?></span>
                                     <?php else: ?>
                                         <span class="text-muted">—</span>
                                     <?php endif; ?>
                                 </td>
-                                <td>
-                                    <?php if (!empty($record['time_out'])): ?>
-                                        <span class="badge bg-danger"><i class="fas fa-sign-out-alt me-1"></i><?php echo date('h:i:s A', strtotime($record['time_out'])); ?></span>
+                                <!-- AM Time Out -->
+                                <td class="text-center">
+                                    <?php if (!empty($record['am_time_out'])): ?>
+                                        <span class="badge bg-danger"><i class="fas fa-sign-out-alt me-1"></i><?php echo date('h:i:s A', strtotime($record['am_time_out'])); ?></span>
+                                    <?php else: ?>
+                                        <span class="text-muted">—</span>
+                                    <?php endif; ?>
+                                </td>
+                                <!-- PM Time In -->
+                                <td class="text-center">
+                                    <?php if (!empty($record['pm_time_in'])): ?>
+                                        <span class="badge" style="background: #2980b9;"><i class="fas fa-sign-in-alt me-1"></i><?php echo date('h:i:s A', strtotime($record['pm_time_in'])); ?></span>
+                                    <?php else: ?>
+                                        <span class="text-muted">—</span>
+                                    <?php endif; ?>
+                                </td>
+                                <!-- PM Time Out -->
+                                <td class="text-center">
+                                    <?php if (!empty($record['pm_time_out'])): ?>
+                                        <span class="badge" style="background: #8e44ad;"><i class="fas fa-sign-out-alt me-1"></i><?php echo date('h:i:s A', strtotime($record['pm_time_out'])); ?></span>
                                     <?php else: ?>
                                         <span class="text-muted">—</span>
                                     <?php endif; ?>
@@ -185,7 +216,7 @@ $stats = getAttendanceStats();
                             <?php endforeach; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="7" class="text-center text-muted py-4">
+                                <td colspan="9" class="text-center text-muted py-4">
                                     No attendance records found
                                 </td>
                             </tr>
@@ -219,8 +250,10 @@ function exportToExcel() {
     html += '<th>Name</th>';
     html += '<th>Course</th>';
     html += '<th>Year</th>';
-    html += '<th>Time In</th>';
-    html += '<th>Time Out</th>';
+    html += '<th>AM Time In</th>';
+    html += '<th>AM Time Out</th>';
+    html += '<th>PM Time In</th>';
+    html += '<th>PM Time Out</th>';
     html += '</tr>';
     
     <?php if (!empty($records)): ?>
@@ -231,8 +264,10 @@ function exportToExcel() {
     html += '<td style="mso-number-format:\'\\@\';"><?php echo htmlspecialchars(($record["first_name"] ?? "Unknown") . " " . ($record["last_name"] ?? "")); ?></td>';
     html += '<td style="mso-number-format:\'\\@\';"><?php echo htmlspecialchars($record["course"] ?? "N/A"); ?></td>';
     html += '<td style="mso-number-format:\'\\@\';"><?php echo htmlspecialchars($record["year_level"] ?? "N/A"); ?></td>';
-    html += '<td style="mso-number-format:\'\\@\';"><?php echo !empty($record["time_in"]) ? date("h:i:s A", strtotime($record["time_in"])) : "—"; ?></td>';
-    html += '<td style="mso-number-format:\'\\@\';"><?php echo !empty($record["time_out"]) ? date("h:i:s A", strtotime($record["time_out"])) : "—"; ?></td>';
+    html += '<td style="mso-number-format:\'\\@\';"><?php echo !empty($record["am_time_in"]) ? date("h:i:s A", strtotime($record["am_time_in"])) : "—"; ?></td>';
+    html += '<td style="mso-number-format:\'\\@\';"><?php echo !empty($record["am_time_out"]) ? date("h:i:s A", strtotime($record["am_time_out"])) : "—"; ?></td>';
+    html += '<td style="mso-number-format:\'\\@\';"><?php echo !empty($record["pm_time_in"]) ? date("h:i:s A", strtotime($record["pm_time_in"])) : "—"; ?></td>';
+    html += '<td style="mso-number-format:\'\\@\';"><?php echo !empty($record["pm_time_out"]) ? date("h:i:s A", strtotime($record["pm_time_out"])) : "—"; ?></td>';
     html += '</tr>';
     <?php endforeach; ?>
     <?php endif; ?>

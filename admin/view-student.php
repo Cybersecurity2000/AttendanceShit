@@ -1,6 +1,7 @@
 <?php
 /**
- * QRCodex - View Student Page
+ * QRCodex - View Student Details Page
+ * Displays individual student information, QR code, and token
  */
 
 require_once __DIR__ . '/../config/config.php';
@@ -12,27 +13,25 @@ if (!isAdminLoggedIn()) {
     exit;
 }
 
-$pageTitle = 'View Student';
-
+// Check if student ID is provided
 if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
     header("Location: " . BASE_URL . "admin/students.php");
     exit;
 }
 
+// Fetch the student
 $student = getStudentById($_GET['id']);
 
+// If student not found, redirect back
 if (!$student) {
     header("Location: " . BASE_URL . "admin/students.php");
     exit;
 }
 
-$qrCodeUrl = createQRCode(BASE_URL . 'scan.php?token=' . $student['qr_token']);
+$pageTitle = 'View Student - ' . htmlspecialchars($student['first_name'] . ' ' . $student['last_name']);
 
-// Get student's attendance history
-$pdo = getDbConnection();
-$stmt = $pdo->prepare("SELECT * FROM attendance WHERE student_id = ? ORDER BY scan_time DESC LIMIT 20");
-$stmt->execute([$student['student_id']]);
-$attendanceHistory = $stmt->fetchAll();
+// Generate QR code URL using the student's qr_token
+$qrCodeUrl = createQRCode($student['qr_token'], 300);
 ?>
 <?php include __DIR__ . '/../includes/header.php'; ?>
 
@@ -65,6 +64,9 @@ $attendanceHistory = $stmt->fetchAll();
                 <a href="<?php echo BASE_URL; ?>admin/qr-generator.php" class="nav-link-custom">
                     <i class="fas fa-qrcode me-2"></i>QR Generator
                 </a>
+                <a href="<?php echo BASE_URL; ?>admin/event-scheduler.php" class="nav-link-custom">
+                    <i class="fas fa-calendar-alt me-2"></i>Event Scheduler
+                </a>
                 <a href="<?php echo BASE_URL; ?>admin/settings.php" class="nav-link-custom">
                     <i class="fas fa-cog me-2"></i>Settings
                 </a>
@@ -79,115 +81,111 @@ $attendanceHistory = $stmt->fetchAll();
     <div class="col-md-9">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2><i class="fas fa-user me-2"></i>Student Details</h2>
-            <a href="<?php echo BASE_URL; ?>admin/students.php" class="btn btn-outline-secondary">
-                <i class="fas fa-arrow-left me-2"></i>Back to List
+            <a href="<?php echo BASE_URL; ?>admin/students.php" class="btn btn-primary-custom">
+                <i class="fas fa-arrow-left me-2"></i>Back to Students
             </a>
         </div>
 
         <div class="row">
-            <!-- Student Info -->
-            <div class="col-md-5">
-                <div class="card mb-4">
-                    <div class="card-header bg-white">
+            <!-- Student Information Card -->
+            <div class="col-md-7 mb-4">
+                <div class="card">
+                    <div class="card-header" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: #d4af37; border-radius: 15px 15px 0 0;">
                         <h5 class="mb-0"><i class="fas fa-id-card me-2"></i>Student Information</h5>
                     </div>
                     <div class="card-body">
-                        <table class="table table-borderless">
-                            <tr>
-                                <td class="text-muted">Student ID:</td>
-                                <td><strong><?php echo htmlspecialchars($student['student_id']); ?></strong></td>
-                            </tr>
-                            <tr>
-                                <td class="text-muted">Full Name:</td>
-                                <td><strong><?php echo htmlspecialchars($student['first_name'] . ' ' . $student['last_name']); ?></strong></td>
-                            </tr>
-                            <tr>
-                                <td class="text-muted">Email:</td>
-                                <td><?php echo htmlspecialchars($student['email'] ?? 'N/A'); ?></td>
-                            </tr>
-                            <tr>
-                                <td class="text-muted">Course:</td>
-                                <td><?php echo htmlspecialchars($student['course'] ?? 'N/A'); ?></td>
-                            </tr>
-                            <tr>
-                                <td class="text-muted">Year Level:</td>
-                                <td><?php echo htmlspecialchars($student['year_level'] ?? 'N/A'); ?></td>
-                            </tr>
-                            <tr>
-                                <td class="text-muted">Registered:</td>
-                                <td><?php echo date('M d, Y h:i A', strtotime($student['created_at'])); ?></td>
-                            </tr>
+                        <table class="table table-borderless mb-0">
+                            <tbody>
+                                <tr>
+                                    <td style="width: 40%; font-weight: 600; color: #555;">
+                                        <i class="fas fa-hashtag me-2" style="color: #c9a227;"></i>Student ID
+                                    </td>
+                                    <td><strong><?php echo htmlspecialchars($student['student_id']); ?></strong></td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight: 600; color: #555;">
+                                        <i class="fas fa-user me-2" style="color: #c9a227;"></i>First Name
+                                    </td>
+                                    <td><?php echo htmlspecialchars($student['first_name']); ?></td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight: 600; color: #555;">
+                                        <i class="fas fa-user me-2" style="color: #c9a227;"></i>Last Name
+                                    </td>
+                                    <td><?php echo htmlspecialchars($student['last_name']); ?></td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight: 600; color: #555;">
+                                        <i class="fas fa-envelope me-2" style="color: #c9a227;"></i>Email
+                                    </td>
+                                    <td><?php echo htmlspecialchars($student['email'] ?? 'N/A'); ?></td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight: 600; color: #555;">
+                                        <i class="fas fa-graduation-cap me-2" style="color: #c9a227;"></i>Course
+                                    </td>
+                                    <td><?php echo htmlspecialchars($student['course'] ?? 'N/A'); ?></td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight: 600; color: #555;">
+                                        <i class="fas fa-layer-group me-2" style="color: #c9a227;"></i>Year Level
+                                    </td>
+                                    <td><?php echo htmlspecialchars($student['year_level'] ?? 'N/A'); ?></td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight: 600; color: #555;">
+                                        <i class="fas fa-calendar me-2" style="color: #c9a227;"></i>Registered
+                                    </td>
+                                    <td><?php echo date('F j, Y g:i A', strtotime($student['created_at'])); ?></td>
+                                </tr>
+                            </tbody>
                         </table>
                     </div>
                 </div>
 
-                <!-- QR Code -->
-                <div class="qr-display">
-                    <h5 class="mb-3">Student QR Code</h5>
-                    <img src="<?php echo $qrCodeUrl; ?>" alt="QR Code" class="img-fluid mb-3" style="max-width: 200px;">
-                    
-                    <div class="d-grid gap-2">
-                        <button onclick="printQRCode()" class="btn btn-primary-custom">
-                            <i class="fas fa-print me-2"></i>Print QR Code
-                        </button>
-                        <a href="<?php echo $qrCodeUrl; ?>" download="qr_<?php echo $student['student_id']; ?>.png" class="btn btn-success-custom">
-                            <i class="fas fa-download me-2"></i>Download QR
-                        </a>
+                <!-- QR Token Card -->
+                <div class="card mt-4">
+                    <div class="card-header" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: #d4af37; border-radius: 15px 15px 0 0;">
+                        <h5 class="mb-0"><i class="fas fa-key me-2"></i>QR Token</h5>
                     </div>
-
-                    <div class="mt-3 p-2 bg-light rounded">
-                        <small class="text-muted">
-                            <strong>QR Token:</strong><br>
-                            <code><?php echo htmlspecialchars($student['qr_token']); ?></code>
-                        </small>
+                    <div class="card-body">
+                        <div class="p-3" style="background: #f8f9fa; border-radius: 10px; border: 1px solid rgba(201, 162, 39, 0.2);">
+                            <code style="font-size: 0.85rem; word-break: break-all; color: #1a1a2e;">
+                                <?php echo htmlspecialchars($student['qr_token']); ?>
+                            </code>
+                        </div>
+                        <button class="btn btn-sm btn-primary-custom mt-3" onclick="copyToken()">
+                            <i class="fas fa-copy me-2"></i>Copy Token
+                        </button>
                     </div>
                 </div>
             </div>
 
-            <!-- Attendance History -->
-            <div class="col-md-7">
-                <div class="card">
-                    <div class="card-header bg-white">
-                        <h5 class="mb-0"><i class="fas fa-history me-2"></i>Attendance History</h5>
+            <!-- QR Code Display -->
+            <div class="col-md-5 mb-4">
+                <div class="qr-display">
+                    <h5 class="mb-3" style="color: #1a1a2e; font-weight: 600;">
+                        <i class="fas fa-qrcode me-2" style="color: #c9a227;"></i>QR Code
+                    </h5>
+                    <div class="mb-3">
+                        <img src="<?php echo htmlspecialchars($qrCodeUrl); ?>" 
+                             alt="QR Code for <?php echo htmlspecialchars($student['first_name'] . ' ' . $student['last_name']); ?>"
+                             id="qr-image"
+                             style="width: 100%; max-width: 280px;">
                     </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
-                            <table class="table table-hover mb-0">
-                                <thead class="table-light sticky-top">
-                                    <tr>
-                                        <th>Date & Time</th>
-                                        <th>Status</th>
-                                        <th>IP Address</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php if (!empty($attendanceHistory)): ?>
-                                        <?php foreach ($attendanceHistory as $record): ?>
-                                        <tr>
-                                            <td>
-                                                <strong><?php echo date('M d, Y', strtotime($record['scan_time'])); ?></strong>
-                                                <br><small class="text-muted"><?php echo date('h:i:s A', strtotime($record['scan_time'])); ?></small>
-                                            </td>
-                                            <td>
-                                                <?php if ($record['status'] === 'in'): ?>
-                                                    <span class="badge bg-success"><i class="fas fa-sign-in-alt me-1"></i>IN</span>
-                                                <?php else: ?>
-                                                    <span class="badge bg-danger"><i class="fas fa-sign-out-alt me-1"></i>OUT</span>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td><small class="text-muted"><?php echo htmlspecialchars($record['ip_address'] ?? 'N/A'); ?></small></td>
-                                        </tr>
-                                        <?php endforeach; ?>
-                                    <?php else: ?>
-                                        <tr>
-                                            <td colspan="3" class="text-center text-muted py-4">
-                                                No attendance records found for this student
-                                            </td>
-                                        </tr>
-                                    <?php endif; ?>
-                                </tbody>
-                            </table>
-                        </div>
+                    <p class="text-muted mb-3">
+                        <strong><?php echo htmlspecialchars($student['first_name'] . ' ' . $student['last_name']); ?></strong><br>
+                        <small><?php echo htmlspecialchars($student['student_id']); ?></small>
+                    </p>
+                    <div class="d-grid gap-2">
+                        <a href="<?php echo htmlspecialchars($qrCodeUrl); ?>" 
+                           download="QR_<?php echo htmlspecialchars($student['student_id']); ?>.png" 
+                           class="btn btn-primary-custom">
+                            <i class="fas fa-download me-2"></i>Download QR Code
+                        </a>
+                        <button class="btn btn-success-custom" onclick="printQR()">
+                            <i class="fas fa-print me-2"></i>Print QR Code
+                        </button>
                     </div>
                 </div>
             </div>
@@ -196,32 +194,77 @@ $attendanceHistory = $stmt->fetchAll();
 </div>
 
 <script>
-function printQRCode() {
-    const printContent = `
+// Copy token to clipboard
+function copyToken() {
+    const token = <?php echo json_encode($student['qr_token']); ?>;
+    navigator.clipboard.writeText(token).then(function() {
+        alert('QR Token copied to clipboard!');
+    }).catch(function() {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = token;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        alert('QR Token copied to clipboard!');
+    });
+}
+
+// Print QR code
+function printQR() {
+    const qrImage = document.getElementById('qr-image').src;
+    const studentName = <?php echo json_encode($student['first_name'] . ' ' . $student['last_name']); ?>;
+    const studentId = <?php echo json_encode($student['student_id']); ?>;
+    const course = <?php echo json_encode($student['course'] ?? 'N/A'); ?>;
+    const yearLevel = <?php echo json_encode($student['year_level'] ?? 'N/A'); ?>;
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <!DOCTYPE html>
         <html>
         <head>
-            <title>QR Code - <?php echo htmlspecialchars($student['student_id']); ?></title>
+            <title>QR Code - ${studentName}</title>
             <style>
-                body { text-align: center; padding: 50px; font-family: Arial, sans-serif; }
-                h2 { margin-bottom: 10px; }
-                p { color: #666; margin-bottom: 30px; }
-                img { max-width: 300px; border: 5px solid #c9a227; border-radius: 10px; padding: 20px; }
+                body { 
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+                    text-align: center; 
+                    padding: 40px; 
+                }
+                .qr-print-container {
+                    border: 3px solid #c9a227;
+                    border-radius: 15px;
+                    padding: 30px;
+                    display: inline-block;
+                    max-width: 400px;
+                }
+                .qr-print-container img { 
+                    width: 250px; 
+                    height: 250px; 
+                    margin: 15px 0; 
+                }
+                h2 { color: #1a1a2e; margin-bottom: 5px; }
+                .student-info { color: #555; font-size: 14px; margin: 5px 0; }
+                .brand { color: #c9a227; font-weight: 700; font-size: 18px; margin-bottom: 15px; }
             </style>
         </head>
         <body>
-            <h2><?php echo htmlspecialchars($student['first_name'] . ' ' . $student['last_name']); ?></h2>
-            <p>Student ID: <?php echo htmlspecialchars($student['student_id']); ?></p>
-            <img src="<?php echo $qrCodeUrl; ?>" alt="QR Code">
+            <div class="qr-print-container">
+                <div class="brand">QRCodex - Attendance System</div>
+                <h2>${studentName}</h2>
+                <p class="student-info"><strong>Student ID:</strong> ${studentId}</p>
+                <p class="student-info"><strong>Course:</strong> ${course}</p>
+                <p class="student-info"><strong>Year Level:</strong> ${yearLevel}</p>
+                <img src="${qrImage}" alt="QR Code">
+                <p class="student-info" style="margin-top: 10px;"><em>Scan this QR code for attendance</em></p>
+            </div>
+            <script>
+                window.onload = function() { window.print(); window.close(); };
+            <\/script>
         </body>
         </html>
-    `;
-    
-    const printWindow = window.open('', '', 'width=600,height=800');
-    printWindow.document.write(printContent);
+    `);
     printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
-    printWindow.close();
 }
 </script>
 

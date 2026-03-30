@@ -1,6 +1,6 @@
 <?php
 /**
- * QRCodex - QR Scanner Page for Attendance
+ * QRCodex - QR Scanner Page for Attendance (Public)
  */
 
 require_once __DIR__ . '/config/config.php';
@@ -11,32 +11,47 @@ $message = '';
 $messageType = '';
 $student = null;
 $newStatus = '';
+$scanPeriod = '';
 $scanTime = '';
+
+// Check scanner status based on event schedule
+$scannerStatus = isScannerOpen();
 
 // Handle manual token submission
 if (isset($_GET['token']) && !empty($_GET['token'])) {
-    $token = $_GET['token'];
-    $student = getStudentByQRToken($token);
-    
-    if ($student) {
-        // Determine status (in/out based on last attendance)
-        $pdo = getDbConnection();
-        $stmt = $pdo->prepare("SELECT status FROM attendance WHERE student_id = ? ORDER BY scan_time DESC LIMIT 1");
-        $stmt->execute([$student['student_id']]);
-        $lastStatus = $stmt->fetch();
-        $newStatus = (!$lastStatus || $lastStatus['status'] === 'out') ? 'in' : 'out';
-        
-        // Record attendance
-        recordAttendance($student['student_id'], $student['qr_token'], $newStatus);
-        
-        // Get the exact scan time
-        $scanTime = date('h:i:s A');
-        
-        $message = 'Attendance recorded successfully!';
-        $messageType = 'success';
-    } else {
-        $message = 'Invalid QR code or token not found.';
+    // Check scanner status for the scan attempt
+    if (!$scannerStatus['is_open']) {
+        $message = 'Scanner is currently CLOSED. ' . $scannerStatus['message'];
         $messageType = 'error';
+    } else {
+        $token = $_GET['token'];
+        $student = getStudentByQRToken($token);
+        
+        if ($student) {
+            // Use the event schedule mode to determine status and period
+            $newStatus = $scannerStatus['status'] ?? 'in';
+            $scanPeriod = $scannerStatus['period'] ?? 'am';
+            
+            // Record attendance with period (checks for duplicates)
+            $result = recordAttendance($student['student_id'], $student['qr_token'], $newStatus, $scanPeriod);
+            
+            if ($result === 'duplicate') {
+                // Student already scanned for this mode today
+                $periodLabel = ($scanPeriod === 'am') ? 'Morning' : 'Afternoon';
+                $statusLabel = ($newStatus === 'in') ? 'Time In' : 'Time Out';
+                $message = 'This QR code has already been scanned for ' . $periodLabel . ' ' . $statusLabel . ' today. Duplicate scan not recorded.';
+                $messageType = 'warning';
+            } else {
+                // Get the exact scan time
+                $scanTime = date('h:i:s A');
+                
+                $message = 'Attendance recorded successfully!';
+                $messageType = 'success';
+            }
+        } else {
+            $message = 'Invalid QR code or token not found.';
+            $messageType = 'error';
+        }
     }
 }
 ?>
@@ -49,6 +64,35 @@ if (isset($_GET['token']) && !empty($_GET['token'])) {
             <p class="text-white opacity-75">Scan your QR code to register attendance</p>
         </div>
 
+        <!-- Scanner Status Banner -->
+        <?php if ($scannerStatus['is_open']): ?>
+        <div class="alert mb-4 border-0" role="alert" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; border-radius: 15px; padding: 20px;">
+            <div class="text-center">
+                <h5 class="mb-1 fw-bold"><i class="fas fa-broadcast-tower me-2"></i>Scanner is OPEN</h5>
+                <p class="mb-0"><?php echo $scannerStatus['message']; ?></p>
+                <?php
+                    $modeLabel = '';
+                    switch ($scannerStatus['mode'] ?? '') {
+                        case 'am_time_in': $modeLabel = '🌅 MORNING TIME IN'; break;
+                        case 'am_time_out': $modeLabel = '🌅 MORNING TIME OUT'; break;
+                        case 'pm_time_in': $modeLabel = '🌇 AFTERNOON TIME IN'; break;
+                        case 'pm_time_out': $modeLabel = '🌇 AFTERNOON TIME OUT'; break;
+                    }
+                ?>
+                <?php if ($modeLabel): ?>
+                <span class="badge fs-6 px-3 py-2 mt-2" style="background: rgba(255,255,255,0.25); border-radius: 20px;"><?php echo $modeLabel; ?></span>
+                <?php endif; ?>
+            </div>
+        </div>
+        <?php else: ?>
+        <div class="alert mb-4 border-0" role="alert" style="background: linear-gradient(135deg, #636e72 0%, #b2bec3 100%); color: white; border-radius: 15px; padding: 20px;">
+            <div class="text-center">
+                <h5 class="mb-1 fw-bold"><i class="fas fa-ban me-2"></i>Scanner is CLOSED</h5>
+                <p class="mb-0"><?php echo $scannerStatus['message']; ?></p>
+            </div>
+        </div>
+        <?php endif; ?>
+
         <?php if ($message && $messageType === 'error'): ?>
         <div class="alert alert-danger-gradient" role="alert">
             <i class="fas fa-exclamation-triangle me-2"></i>
@@ -56,37 +100,61 @@ if (isset($_GET['token']) && !empty($_GET['token'])) {
         </div>
         <?php endif; ?>
 
+        <?php if ($message && $messageType === 'warning'): ?>
+        <div class="alert mb-4 border-0" role="alert" style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%); color: white; border-radius: 15px; padding: 20px;">
+            <div class="text-center">
+                <div style="background: rgba(255,255,255,0.2); width: 70px; height: 70px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 15px;">
+                    <i class="fas fa-exclamation-circle fa-3x text-white"></i>
+                </div>
+                <h4 class="fw-bold mb-2"><i class="fas fa-ban me-2"></i>Already Scanned!</h4>
+                <p class="mb-1" style="font-size: 1.1rem;"><?php echo htmlspecialchars($message); ?></p>
+                <?php if ($student): ?>
+                <hr style="border-color: rgba(255,255,255,0.3);">
+                <p class="mb-0">
+                    <i class="fas fa-user me-1"></i>
+                    <strong><?php echo htmlspecialchars($student['first_name'] . ' ' . $student['last_name']); ?></strong>
+                    — <?php echo htmlspecialchars($student['student_id']); ?>
+                </p>
+                <?php endif; ?>
+            </div>
+        </div>
+        <?php endif; ?>
+
         <!-- TIME IN / TIME OUT Visual Indicator Card -->
         <?php if ($student && $messageType === 'success'): ?>
         <div class="card mb-4 border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
-            <?php if ($newStatus === 'in'): ?>
-            <!-- GREEN CARD — TIME IN -->
-            <div style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); padding: 40px 30px; text-align: center;">
+            <?php
+                $isTimeIn = ($newStatus === 'in');
+                $periodLabel = ($scanPeriod === 'am') ? 'MORNING' : 'AFTERNOON';
+                $statusLabel = $isTimeIn ? 'TIME IN' : 'TIME OUT';
+                $periodEmoji = ($scanPeriod === 'am') ? '🌅' : '🌇';
+                
+                if ($isTimeIn) {
+                    $gradientBg = ($scanPeriod === 'am') 
+                        ? 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)' 
+                        : 'linear-gradient(135deg, #2980b9 0%, #6dd5fa 100%)';
+                    $iconColor = ($scanPeriod === 'am') ? '#11998e' : '#2980b9';
+                } else {
+                    $gradientBg = ($scanPeriod === 'am') 
+                        ? 'linear-gradient(135deg, #e53935 0%, #f5576c 100%)' 
+                        : 'linear-gradient(135deg, #8e44ad 0%, #c39bd3 100%)';
+                    $iconColor = ($scanPeriod === 'am') ? '#e53935' : '#8e44ad';
+                }
+            ?>
+            <div style="background: <?php echo $gradientBg; ?>; padding: 40px 30px; text-align: center;">
                 <div style="background: rgba(255,255,255,0.2); width: 80px; height: 80px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 20px;">
-                    <i class="fas fa-sign-in-alt fa-3x text-white"></i>
+                    <i class="fas fa-<?php echo $isTimeIn ? 'sign-in-alt' : 'sign-out-alt'; ?> fa-3x text-white"></i>
                 </div>
-                <h2 class="text-white fw-bold mb-1" style="font-size: 2rem;">🟢 TIME IN</h2>
+                <h2 class="text-white fw-bold mb-1" style="font-size: 2rem;"><?php echo $periodEmoji; ?> <?php echo $periodLabel; ?> <?php echo $statusLabel; ?></h2>
                 <p class="text-white mb-0" style="font-size: 1.5rem; font-weight: 600;">
                     <i class="fas fa-clock me-2"></i><?php echo $scanTime; ?>
                 </p>
             </div>
-            <?php else: ?>
-            <!-- RED CARD — TIME OUT -->
-            <div style="background: linear-gradient(135deg, #e53935 0%, #e35d5b 50%, #f5576c 100%); padding: 40px 30px; text-align: center;">
-                <div style="background: rgba(255,255,255,0.2); width: 80px; height: 80px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 20px;">
-                    <i class="fas fa-sign-out-alt fa-3x text-white"></i>
-                </div>
-                <h2 class="text-white fw-bold mb-1" style="font-size: 2rem;">🔴 TIME OUT</h2>
-                <p class="text-white mb-0" style="font-size: 1.5rem; font-weight: 600;">
-                    <i class="fas fa-clock me-2"></i><?php echo $scanTime; ?>
-                </p>
-            </div>
-            <?php endif; ?>
 
             <!-- Student Info Section -->
             <div class="card-body text-center py-4" style="background: #fff;">
                 <div class="mb-3">
-                    <i class="fas fa-user-circle fa-4x" style="color: <?php echo $newStatus === 'in' ? '#11998e' : '#e53935'; ?>;"></i>
+                    <i class="fas fa-user-circle fa-4x" style="color: <?php echo $iconColor; ?>;"></i>
                 </div>
                 <h4 class="fw-bold mb-1"><?php echo htmlspecialchars($student['first_name'] . ' ' . $student['last_name']); ?></h4>
                 <p class="text-muted mb-1">
@@ -102,21 +170,16 @@ if (isset($_GET['token']) && !empty($_GET['token'])) {
                 </p>
                 <?php endif; ?>
                 <div class="mt-3">
-                    <?php if ($newStatus === 'in'): ?>
-                    <span class="badge fs-6 px-4 py-2" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); border-radius: 25px;">
-                        <i class="fas fa-check-circle me-2"></i>Checked In Successfully
+                    <span class="badge fs-6 px-4 py-2" style="background: <?php echo $gradientBg; ?>; border-radius: 25px;">
+                        <i class="fas fa-check-circle me-2"></i><?php echo $periodLabel; ?> <?php echo $isTimeIn ? 'Checked In' : 'Checked Out'; ?> Successfully
                     </span>
-                    <?php else: ?>
-                    <span class="badge fs-6 px-4 py-2" style="background: linear-gradient(135deg, #e53935 0%, #f5576c 100%); border-radius: 25px;">
-                        <i class="fas fa-check-circle me-2"></i>Checked Out Successfully
-                    </span>
-                    <?php endif; ?>
                 </div>
             </div>
         </div>
         <?php endif; ?>
 
         <!-- Camera Scanner -->
+        <?php if ($scannerStatus['is_open']): ?>
         <div class="scanner-container mb-4">
             <div id="qr-reader" style="width: 100%; max-width: 400px; margin: 0 auto;"></div>
             <button id="start-scan-btn" class="scanner-btn mt-3" onclick="startScanner()">
@@ -145,6 +208,13 @@ if (isset($_GET['token']) && !empty($_GET['token'])) {
                 </form>
             </div>
         </div>
+        <?php else: ?>
+        <div class="scanner-container mb-4 text-center py-5">
+            <i class="fas fa-lock fa-4x mb-3" style="color: #b2bec3;"></i>
+            <h4 class="text-muted">Scanner is Currently Closed</h4>
+            <p class="text-muted mb-3">The QR scanner is only available during scheduled event windows.</p>
+        </div>
+        <?php endif; ?>
 
         <!-- Instructions -->
         <div class="card mt-4">
@@ -154,6 +224,7 @@ if (isset($_GET['token']) && !empty($_GET['token'])) {
                     <li>Click "Start Camera Scanner" to open your device camera</li>
                     <li>Point your camera at the QR code displayed on the student's device or printed card</li>
                     <li>The system will automatically record attendance when a valid QR is detected</li>
+                    <li>Your scan will be recorded as Morning or Afternoon based on the active event window</li>
                     <li>Alternatively, you can manually enter the token or student ID</li>
                 </ol>
             </div>
@@ -161,6 +232,7 @@ if (isset($_GET['token']) && !empty($_GET['token'])) {
     </div>
 </div>
 
+<?php if ($scannerStatus['is_open']): ?>
 <!-- QR Code Scanner Library -->
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
@@ -213,5 +285,6 @@ function onScanFailure(error) {
     // Silently ignore scan failures (camera is still scanning)
 }
 </script>
+<?php endif; ?>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>

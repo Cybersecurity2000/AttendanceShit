@@ -75,6 +75,9 @@ $adminInfo = getAdminById($_SESSION['admin_id']);
                 <a href="<?php echo BASE_URL; ?>admin/qr-generator.php" class="nav-link-custom">
                     <i class="fas fa-qrcode me-2"></i>QR Generator
                 </a>
+                <a href="<?php echo BASE_URL; ?>admin/event-scheduler.php" class="nav-link-custom">
+                    <i class="fas fa-calendar-alt me-2"></i>Event Scheduler
+                </a>
                 <a href="<?php echo BASE_URL; ?>admin/settings.php" class="nav-link-custom active">
                     <i class="fas fa-cog me-2"></i>Settings
                 </a>
