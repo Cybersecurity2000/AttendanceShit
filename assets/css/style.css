@@ -1,0 +1,306 @@
+/* QRCodex Custom Styles - Gold Theme */
+:root {
+    --primary-color: #c9a227;
+    --primary-dark: #a68523;
+    --primary-light: #d4af37;
+    --primary-lighter: #e6c744;
+    --secondary-color: #6c757d;
+    --success-color: #198754;
+    --danger-color: #dc3545;
+    --gold-gradient: linear-gradient(135deg, #c9a227 0%, #d4af37 50%, #e6c744 100%);
+    --gold-gradient-dark: linear-gradient(135deg, #a68523 0%, #c9a227 100%);
+    --gold-gradient-soft: linear-gradient(135deg, #d4af37 0%, #f0d060 100%);
+    --bg-dark: #1a1a2e;
+    --bg-darker: #16213e;
+}
+
+body {
+    background: linear-gradient(160deg, #f8f4e8 0%, #f5f0e0 30%, #efe8d4 60%, #f2edd8 100%);
+    min-height: 100vh;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    position: relative;
+}
+
+.navbar-brand {
+    font-weight: 700;
+    font-size: 1.5rem;
+}
+
+.navbar .nav-link {
+    color: rgba(212, 175, 55, 0.85) !important;
+    transition: color 0.3s;
+}
+
+.navbar .nav-link:hover {
+    color: #e6c744 !important;
+}
+
+.card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    background: rgba(255, 255, 255, 0.95);
+}
+
+.btn-primary-custom {
+    background: var(--gold-gradient);
+    border: none;
+    padding: 10px 30px;
+    border-radius: 25px;
+    color: #1a1a2e;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.btn-primary-custom:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(201,162,39,0.4);
+    color: #1a1a2e;
+}
+
+.btn-success-custom {
+    background: linear-gradient(135deg, #a68523 0%, #c9a227 50%, #d4af37 100%);
+    border: none;
+    padding: 10px 30px;
+    border-radius: 25px;
+    color: #1a1a2e;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.btn-success-custom:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(166,133,35,0.4);
+    color: #1a1a2e;
+}
+
+.stat-card {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    padding: 20px;
+    text-align: center;
+    transition: transform 0.3s;
+    border: 1px solid rgba(201, 162, 39, 0.15);
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(201,162,39,0.15);
+}
+
+.stat-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin-bottom: 15px;
+}
+
+.table-container {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+}
+
+.table thead th {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    color: #d4af37;
+    border: none;
+    font-weight: 600;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(212, 175, 55, 0.05);
+}
+
+.qr-display {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 30px;
+    border-radius: 15px;
+    text-align: center;
+}
+
+.qr-display img {
+    max-width: 250px;
+    border: 5px solid #c9a227;
+    border-radius: 10px;
+    padding: 10px;
+}
+
+.sidebar {
+    background: rgba(255, 255, 255, 0.95);
+    min-height: 100vh;
+    padding: 20px;
+    border-radius: 0 15px 15px 0;
+    border-right: 3px solid rgba(201, 162, 39, 0.2);
+}
+
+.nav-link-custom {
+    color: #333;
+    padding: 12px 20px;
+    border-radius: 10px;
+    margin-bottom: 5px;
+    transition: all 0.3s;
+    text-decoration: none;
+    display: block;
+}
+
+.nav-link-custom:hover, .nav-link-custom.active {
+    background: var(--gold-gradient);
+    color: #1a1a2e;
+    font-weight: 600;
+}
+
+.status-in { color: #198754; font-weight: 600; }
+.status-out { color: #dc3545; font-weight: 600; }
+
+.alert-gradient {
+    background: linear-gradient(135deg, #a68523 0%, #d4af37 100%);
+    border: none;
+    color: #1a1a2e;
+    font-weight: 600;
+}
+
+.alert-danger-gradient {
+    background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
+    border: none;
+    color: white;
+}
+
+.form-control:focus {
+    border-color: #c9a227;
+    box-shadow: 0 0 0 0.25rem rgba(201, 162, 39, 0.25);
+}
+
+.form-select:focus {
+    border-color: #c9a227;
+    box-shadow: 0 0 0 0.25rem rgba(201, 162, 39, 0.25);
+}
+
+.student-card {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    transition: all 0.3s;
+}
+
+.student-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+.scanner-container {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    padding: 30px;
+    text-align: center;
+}
+
+#qr-reader {
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.scanner-btn {
+    background: var(--gold-gradient);
+    color: #1a1a2e;
+    border: none;
+    padding: 15px 40px;
+    border-radius: 30px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.scanner-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 5px 20px rgba(201,162,39,0.5);
+}
+
+.footer {
+    text-align: center;
+    padding: 20px;
+    color: #4a4a4a;
+    margin-top: auto;
+}
+
+/* Badge overrides for gold theme */
+.badge.bg-success {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%) !important;
+}
+
+.badge.bg-danger {
+    background: linear-gradient(135deg, #e53935 0%, #f5576c 100%) !important;
+}
+
+/* Button outline styles */
+.btn-outline-primary {
+    color: #c9a227;
+    border-color: #c9a227;
+}
+
+.btn-outline-primary:hover {
+    background-color: #c9a227;
+    border-color: #c9a227;
+    color: #1a1a2e;
+}
+
+.btn-outline-danger {
+    color: #dc3545;
+    border-color: #dc3545;
+}
+
+.btn-outline-danger:hover {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: white;
+}
+
+/* List group active state */
+.list-group-item.active {
+    background-color: #c9a227;
+    border-color: #c9a227;
+    color: #1a1a2e;
+}
+
+.list-group-item-action:hover {
+    background-color: rgba(201, 162, 39, 0.1);
+}
+
+/* Card header */
+.card-header {
+    border-bottom: 2px solid rgba(201, 162, 39, 0.15);
+}
+
+/* Input group */
+.input-group-text {
+    background: linear-gradient(135deg, #c9a227 0%, #d4af37 100%);
+    border-color: #c9a227;
+    color: #1a1a2e;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c9a227;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #a68523;
+}
